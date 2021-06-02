@@ -1,5 +1,7 @@
 # PHOSC-Zero-Shot-Word-Recognition
 
+![SPP-Pho(SC)Net Image](Images/Pho(SC)net_Architecture.png)
+
 **PHOSNet** and **Pho(SC)Net** are convolution neural networks for characterizing document word images using proposed *PHOS* and *Pho(SC)* embedding, which can be used for word recognition in Zero-shot setting. This code was used for generating results for the work [Pho(SC)Net: An Approach Towards Zero-shot Word Image Recognition in Historical Documents](https://arxiv.org/abs/2105.15093).
 
 Implemented using Tensorflow 2.x framework.
@@ -12,7 +14,7 @@ Implemented using Tensorflow 2.x framework.
 - Matplotlib
 
 ## Files 
-| Filename | Significance |
+| File Name | Significance |
 | ------ | ------ |
 | Alphabet.csv | Stores count of primary shapes for alphabets |
 | aug_images.py | Augmentation of the images in folder (also saves them in same folder)|
@@ -23,7 +25,7 @@ Implemented using Tensorflow 2.x framework.
 > Saved model names follow a naming convention, i.e. *new_(model_identifier)_(batch_size)\_.h5*
 
 #### Additional Directories generated after training/testing
-| Filename | Significance |
+| Directory | Significance |
 | ------ | ------ |
 | Train_History | Saves the training data (losses/similarities) for each epoch |
 | Test_Results | Saves true and predicted labels for each sample in test set|
@@ -35,4 +37,4 @@ Implemented using Tensorflow 2.x framework.
 
 ## Results
 Following image shows prediction results on images from IAM-handwriting dataset.
-
+![SPP-Pho(SC)Net Image](Images/PredictionExamples.png)
