@@ -1,11 +1,19 @@
+# Library imports
+
 import csv
 import numpy as np
+
+# Input: CSV file name that has shape counts for each alphabet
+# Output: Number of shapes/columns
 
 def get_number_of_columns(csv_file):
     with open(csv_file) as file:
         reader = csv.reader(file, delimiter=',', skipinitialspace=True)
         return len(next(reader))-1
 
+
+# Input: CSV file name that has shape counts for each alphabet
+# Output: A dictionary where alphabet is key mapped to its shape count vector(np-array)
 
 def create_alphabet_dictionary(csv_file):
     alphabet_dict = dict()
@@ -25,12 +33,18 @@ csv_num_cols = get_number_of_columns(alphabet_csv)
 numpy_csv = np.genfromtxt(alphabet_csv, dtype=int, delimiter=",")
 numpy_csv=np.delete(numpy_csv,0,1)
 
+# Input: A word segment(string)
+# Output: A shape count vector for all alphabets in input word segment (np-array)
+
 def word_vector(word):
     vector = np.zeros(csv_num_cols)
     for letter in word:
         letter_index = alphabet_dict[letter]
         vector += numpy_csv[letter_index]
     return vector
+
+# Input: A word(string) 
+# Output: PHOS vector
 
 def generate_label(word):
     vector = word_vector(word)
@@ -42,11 +56,18 @@ def generate_label(word):
         vector=np.concatenate((vector,word_vector(word[(split-1)*parts:L])),axis=0)
     return vector
 
+# Input: A list of words(strings)
+# Output: A dictionary of PHOS vectors in which the words serve as the key
+
 def gen_label(word_list):
     label={}
     for word in word_list:
         label[word]=generate_label(word)
     return label
+
+
+# Input: A text file name that has a list of words(strings)
+# Output: A dictionary of PHOS vectors in which the words serve as the key
 
 def label_maker(word_txt):
     label={}

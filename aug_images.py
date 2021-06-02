@@ -1,9 +1,13 @@
+# Library imports
+
 import os
 import argparse
 import random
 import pandas as pd
 import numpy as np
 from tensorflow.keras.preprocessing.image import load_img,img_to_array,array_to_img,ImageDataGenerator
+
+# Arguement Parser variables
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-op", type=str,required=True,
@@ -21,6 +25,9 @@ args = vars(ap.parse_args())
 VARIABILITY=args['np']
 aug=args['aug']
 
+# Function to add Gaussian Noise in the sample images
+# Higher the VARIABILITY, higher is the noise
+
 def add_noise(img):
     deviation = VARIABILITY*random.random()
     noise = np.random.normal(0, deviation, img.shape)
@@ -32,10 +39,15 @@ def remove_folder(x):
     x=x.split('/')[::-1]
     return x[0]
 
+# Function that adds transformations(shear and noise) and saves the images in destined folder
+
 def augment_images(train_folder,train_csv_file,train_unseen_csv,aug):
     Y=[]
     df_train=pd.read_csv(train_csv_file)
     k=len(df_train)
+
+	# Removing seen class samples belonging to test set
+
     if train_unseen_csv!=None:
         df_random=pd.read_csv(train_unseen_csv)
     else:
@@ -44,9 +56,15 @@ def augment_images(train_folder,train_csv_file,train_unseen_csv,aug):
     df_aug= df_aug[df_aug['_merge'] == 'left_only']
     df_aug = df_aug[['Image', 'Word']]
     df_aug['Image']=train_folder+"/"+df_aug['Image']
+
+	# Datagenerator for augmentation
+
     datagen = ImageDataGenerator(
     shear_range=20,
     preprocessing_function=add_noise)
+
+	# Add samples for each image in the set
+
     for i in range(len(df_aug)):
         org=img_to_array(load_img(df_aug['Image'].iloc[i]))
         word=df_aug['Word'].iloc[i]
@@ -62,10 +80,13 @@ def augment_images(train_folder,train_csv_file,train_unseen_csv,aug):
             img.save(img_path)
             Y.append((FNi, word))
             cnt-=1
+
+	# Create new dataframe and concatenate with previous dataframe
     df=pd.DataFrame(Y,columns=["Image","Word"])
     df_train=pd.concat([df_train,df],ignore_index=True)
     df_train['Image']=df_train['Image'].apply(remove_folder)
     df_train.set_index('Image', inplace=True)
     df_train.to_csv(train_csv_file)
     
+# Calling augment_images function using the parameters from argparse
 augment_images(args['op'], args['map'], args['umap'], aug)

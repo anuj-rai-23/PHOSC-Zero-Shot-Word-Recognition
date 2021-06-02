@@ -1,3 +1,5 @@
+# Library imports 
+
 import os
 import argparse
 import itertools
@@ -9,7 +11,12 @@ from tensorflow.keras.preprocessing.image import img_to_array,load_img
 import matplotlib.pyplot as plt
 from tensorflow_addons.layers import SpatialPyramidPooling2D
 from phos_label_generator import gen_label
-os.environ["CUDA_VISIBLE_DEVICES"]="2"
+
+# Uncomment the following line and set appropriate GPU if you want to set up/assign a GPU device to run this code
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"	
+
+# Argument parser variables
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-model", type=str,required=False,
 	help="Pretrained Model")
@@ -27,9 +34,15 @@ ap.add_argument("-idn", type=str,required=False, default='',
 	help="Identifier for saving image files")
 args = vars(ap.parse_args())
 
+# Input: Two vectors x and y
+# Output: Similarity index = Cosine simialirity * 1000
+
 def similarity(x,y):
     return 1000*np.dot(x,y)/(LA.norm(x)*LA.norm(y))
 
+
+# Input: Confusion matrix, true and predicted class names, plot title, color map and normalization parameter(bool)
+# Output: Plots and saves confusion matrix 
 
 def plot_confusion_matrix(cm,target_names_true,target_names_pred,title='Confusion matrix',cmap=None,normalize=True):
     #accuracy = np.trace(cm) / float(np.sum(cm))
@@ -66,9 +79,12 @@ def plot_confusion_matrix(cm,target_names_true,target_names_pred,title='Confusio
 
     plt.tight_layout()
     plt.ylabel('True Word Class Label Length')
-    plt.savefig("X_Test_Plots/"+title+".png")
+    plt.savefig("Test_Plots/"+title+".png")
     plt.xlabel('Predicted Word Class Label Length')
     plt.show()
+
+# Input: Model, dataframes for test set samples, dictionary for test set words and label(PHOC vector)
+# Output: Similarity index = Cosine simialirity * 1000
 
 def accuracy_test(model,df_test,test_word_label,name):
     cnt=0
@@ -90,21 +106,21 @@ def accuracy_test(model,df_test,test_word_label,name):
         idx_pred[lengths_pred[k]]=k
     conf_matrix=np.zeros(shape=(l,m))
     Predictions=[]
+
+	# Finding predictions for test set word images
+
     for i in range(len(df_test)):
-        #print(i)
         x=img_to_array(load_img(df_test['Image'].iloc[i]))
         word=df_test['Word'].iloc[i]
         word_count_by_len[len(word)]+=1
         x = np.expand_dims(x, axis=0)
         y_pred=np.squeeze(model.predict(x))
-        #print(y_pred)
         mx=0
         for k in test_word_label:
             temp=similarity(y_pred,test_word_label[k])
             if temp>mx:
                 mx=temp
                 op=k
-        #print(word,op,mx)
         conf_matrix[idx_true[len(word)]][idx_pred[len(op)]]+=1
         Predictions.append((df_test['Image'].iloc[i],word,op))
         if op==word:
@@ -113,21 +129,31 @@ def accuracy_test(model,df_test,test_word_label,name):
     for k in acc_by_len:
         if acc_by_len[k]!=0:
             acc_by_len[k]=acc_by_len[k]/word_count_by_len[k] * 100
+	
+	# Storing true and predicted labels for each image sample
+
     df=pd.DataFrame(Predictions,columns=["Image","True Label","Predicted Label"])
     df.set_index('Image', inplace=True)
-    df.to_csv("X_Test_Results/"+name+".csv")
+    df.to_csv("Test_Results/"+name+".csv")
     print("Correct predictions:",cnt,"   Accuracy=",cnt/no_of_images)
+
+	# Plotting length-wise correct predictions 
+
     plt.figure(figsize=(10,6))
     plt.bar(*zip(*acc_by_len.items()))
     plt.title('Acc:'+str(cnt)+'/'+str(no_of_images)+'  Correct predictions lengthwise')
     plt.xticks(lengths_true)
     plt.xlabel('Word Length')
     plt.ylabel('Percentage of correct predictions')
-    plt.savefig("X_Test_Plots/"+name+"_ZSL_acc.png")
+    plt.savefig("Test_Plots/"+name+"_ZSL_acc.png")
     plt.show()
+
+	# Plotting length-wise confusion matrix
     plot_confusion_matrix(conf_matrix,lengths_true,lengths_pred,title=name+"_confmat")
     return cnt/no_of_images
 
+# Input: model, folder names for samples, CSV files having sample to label mapping(Train and test set), and name(identifier in plot names)
+# Output: Prediction accuracy (Also calls functions for plotting)
 
 def zsl_test(model,test_folder,test_csv_file,seen_word_folder,seen_word_map,train_csv_file,name):
     df_test=pd.read_csv(test_csv_file)
@@ -159,16 +185,17 @@ seen_words_folder=args['stf']
 train_map=args['train']
 name=MODEL+"_"+args['idn']
 
-if not os.path.exists("X_Test_Plots"):
-    os.makedirs("X_Test_Plots")
-if not os.path.exists("X_Test_Results"):
-    os.makedirs("X_Test_Results")
+# Create directories for storing test results and plots
 
+if not os.path.exists("Test_Plots"):
+    os.makedirs("Test_Plots")
+if not os.path.exists("Test_Results"):
+    os.makedirs("Test_Results")
 
+# Load model from filename and print model name(if successfully loaded)
 model=tf.keras.models.load_model(MODEL+".h5")
 print(MODEL)
+
+# Function called for test set prediction and result plotting
 zsl_test(model,test_folder,test_map,seen_words_folder,seen_word_map,train_map,name)
 
-
-
-#generalized_zsl_test(model,test_folder,train_csv,test_csv,name)

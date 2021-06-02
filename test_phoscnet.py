@@ -1,3 +1,5 @@
+# Library imports 
+
 import os
 import argparse
 import itertools
@@ -13,7 +15,12 @@ import matplotlib.pyplot as plt
 from phos_label_generator import gen_label
 from phoc_label_generator import gen_phoc_label
 from tensorflow_addons.layers import SpatialPyramidPooling2D
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+
+# Uncomment the following line and set appropriate GPU if you want to set up/assign a GPU device to run this code
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"	
+
+# Argument parser variables
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-model", type=str,required=False,
 	help="Pretrained Model")
@@ -31,21 +38,15 @@ ap.add_argument("-idn", type=str,required=False, default='',
 	help="Identifier for saving image files")
 args = vars(ap.parse_args())
 
+# Input: Two vectors x and y
+# Output: Similarity index = Cosine simialirity * 1000
+
 def similarity(x,y):
     return 1000*np.dot(x,y)/(LA.norm(x)*LA.norm(y))
 
-def build_model():
-    '''
-    input_tensor = Input(shape=(None,None, 3)) # To change input shape
-    resnet50 = ResNet50(include_top=False,  weights='imagenet',input_tensor=input_tensor)
+# Function to build and return Pho(SC) model 
 
-    # model
-    top_model=GlobalAveragePooling2D()(resnet50.get_layer('conv5_block3_2_conv').input)
-    #top_model=Dropout(0.5)(top_model)
-    top_model.trainable=False
-    model=Flatten()(top_model)
-    '''
-    #model = Sequential()
+def build_model():   
     inp = Input(shape=(None,None,3))
     model=Conv2D(64, (3, 3), padding='same',activation='relu')(inp)
     model=Conv2D(64, (3, 3), padding='same', activation='relu')(model)
@@ -64,12 +65,15 @@ def build_model():
     model=(Conv2D(512, (3, 3), padding='same', activation='relu'))(model)
     model=(SpatialPyramidPooling2D([1,2,4]))(model)
     model=(Flatten())(model)
+	
+	# PHOS component
     phosnet_op=Dense(4096, activation='relu')(model)
     phosnet_op=Dropout(0.5)(phosnet_op)
     phosnet_op=Dense(4096, activation='relu')(phosnet_op)
     phosnet_op=Dropout(0.5)(phosnet_op)
     phosnet_op=Dense(165, activation='relu',name="phosnet")(phosnet_op)
 
+	# PHOC component
     phocnet=Dense(4096, activation='relu')(model)
     phocnet=Dropout(0.5)(phocnet)
     phocnet=Dense(4096, activation='relu')(phocnet)
@@ -77,6 +81,9 @@ def build_model():
     phocnet=Dense(604, activation='sigmoid',name="phocnet")(phocnet)
     model = Model(inputs=inp, outputs=[phosnet_op,phocnet])
     return model
+
+# Input: Confusion matrix, true and predicted class names, plot title, color map and normalization parameter(bool)
+# Output: Plots and saves confusion matrix 
 
 def plot_confusion_matrix(cm,target_names_true,target_names_pred,title='Confusion matrix',cmap=None,normalize=True):
     #accuracy = np.trace(cm) / float(np.sum(cm))
@@ -113,9 +120,12 @@ def plot_confusion_matrix(cm,target_names_true,target_names_pred,title='Confusio
 
     plt.tight_layout()
     plt.ylabel('True Word Class Label Length')
-    plt.savefig("X_Test_Plots/"+title+".png")
+    plt.savefig("Test_Plots/"+title+".png")
     plt.xlabel('Predicted Word Class Label Length')
     plt.show()
+
+# Input: Model, dataframes for test set samples, dictionary for test set words and label(PHOC vector)
+# Output: Similarity index = Cosine simialirity * 1000
 
 def accuracy_test(model,df_test,test_word_label,name):
     cnt=0
@@ -163,7 +173,7 @@ def accuracy_test(model,df_test,test_word_label,name):
             acc_by_len[k]=acc_by_len[k]/word_count_by_len[k] * 100
     df=pd.DataFrame(Predictions,columns=["Image","True Label","Predicted Label"])
     df.set_index('Image', inplace=True)
-    df.to_csv("X_Test_Results/"+name+".csv")
+    df.to_csv("Test_Results/"+name+".csv")
     print("Correct predictions:",cnt,"   Accuracy=",cnt/no_of_images)
     plt.figure(figsize=(10,6))
     plt.bar(*zip(*acc_by_len.items()))
@@ -171,10 +181,13 @@ def accuracy_test(model,df_test,test_word_label,name):
     plt.xticks(lengths_true)
     plt.xlabel('Word Length')
     plt.ylabel('Percentage of correct predictions')
-    plt.savefig("X_Test_Plots/"+name+"_ZSL_acc.png")
+    plt.savefig("Test_Plots/"+name+"_ZSL_acc.png")
     plt.show()
     plot_confusion_matrix(conf_matrix,lengths_true,lengths_pred,title=name+"_confmat")
     return cnt/no_of_images
+
+# Input: A word(string) 
+# Output: Pho(SC) vector after concatenating PHOS and PHOC 
 
 def get_comb_label(x):
     phos_labels=gen_label(x)
@@ -183,6 +196,9 @@ def get_comb_label(x):
     for x in phos_labels:
         test_labels[x]=np.concatenate((phos_labels[x],phoc_labels[x]),axis=0)
     return test_labels
+
+# Input: model, folder names for samples, CSV files having sample to label mapping(Train and test set), and name(identifier in plot names)
+# Output: Prediction accuracy (Also calls functions for plotting)
 
 def zsl_test(model,test_folder,test_csv_file,seen_word_folder,seen_word_map,train_csv_file,name):
     df_test=pd.read_csv(test_csv_file)
@@ -214,16 +230,19 @@ seen_words_folder=args['stf']
 train_map=args['train']
 name=MODEL+"_"+args['idn']
 
-if not os.path.exists("X_Test_Plots"):
-    os.makedirs("X_Test_Plots")
-if not os.path.exists("X_Test_Results"):
-    os.makedirs("X_Test_Results")
+# Create directories for storing test results and plots
 
+if not os.path.exists("Test_Plots"):
+    os.makedirs("Test_Plots")
+if not os.path.exists("Test_Results"):
+    os.makedirs("Test_Results")
+
+# Build model and load weights from filename and print model name(if successfully loaded)
 model=build_model()
 model.load_weights(MODEL+".h5")
 #model=tf.keras.models.load_model(MODEL+".h5")
 print(MODEL)
+
+# Function called for test set prediction and result plotting
 zsl_test(model,test_folder,test_map,seen_words_folder,seen_word_map,train_map,name)
 
-
-#generalized_zsl_test(model,test_folder,train_csv,test_csv,name)

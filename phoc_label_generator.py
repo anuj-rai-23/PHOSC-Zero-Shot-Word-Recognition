@@ -1,5 +1,12 @@
+"""
+Module that generates 604 length PHOC vector as proposed in SPP-PHOCNet paper
+Modified version from https://github.com/pinakinathc/phocnet_keras 
+"""
+
 import csv
 import numpy as np
+
+# Generates PHOC component corresponding to alphabets/digits
 
 def generate_36(word):
     '''The vector is a binary and stands for:
@@ -13,6 +20,8 @@ def generate_36(word):
             vector_36[10+ord(char) - ord('a')] = 1
 
     return vector_36
+
+# Generates PHOC component corresponding to 50 most frequent bi-grams of English
 
 def generate_50(word):
     bigram = ['th', 'he', 'in', 'er', 'an', 're', 'es', 'on', 'st', 'nt', 'en',
@@ -29,6 +38,9 @@ def generate_50(word):
 
     return vector_50
 
+# Input: A word(string) 
+# Output: PHOC vector
+
 def generate_phoc_vector(word):
     word = word.lower()
     vector = []
@@ -44,11 +56,17 @@ def generate_phoc_vector(word):
     return vector
 
 
+# Input: A list of words(strings)
+# Output: A dictionary of PHOC vectors in which the words serve as the key
+
 def gen_phoc_label(word_list):
     label={}
     for word in word_list:
         label[word]=generate_phoc_vector(word)
     return label
+
+# Input: A text file name that has a list of words(strings)
+# Output: A dictionary of PHOC vectors in which the words serve as the key
 
 def label_maker(word_txt):
     label={}

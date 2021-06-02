@@ -1,3 +1,5 @@
+# Library imports 
+
 import os
 import argparse
 import random
@@ -12,11 +14,15 @@ import matplotlib.pyplot as plt
 from phoc_label_generator import gen_phoc_label
 from tensorflow.keras.utils import Sequence
 from tensorflow_addons.layers import SpatialPyramidPooling2D
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# Uncomment the following line and set appropriate GPU if you want to set up/assign a GPU device to run this code
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"	
+
+# Setting random seeds
 tf.random.set_seed(73)
 random.seed(73)
 np.random.seed(73) 
 
+# Argument parser variables
 ap = argparse.ArgumentParser()
 ap.add_argument("-idn", type=str,required=False,
 	help="Identifier Name (Prefer Train Set Name)")
@@ -39,7 +45,6 @@ ap.add_argument("-tr", type=str,required=True,
 
 args = vars(ap.parse_args())
 
-#print(args)
 
 MODEL=args['idn']
 BATCH_SIZE=args['batch']
@@ -51,6 +56,8 @@ train_unseen_csv_file=args['umap']
 train_folder=args['tr']
 valid_folder=args['vi']
 model_name="new_"+MODEL+"_"+str(BATCH_SIZE)+"_"
+
+# DataSequence class to pass data(images/vector) in batches
 
 class DataSequence(Sequence):
     def __init__(self, df, batch_size):
@@ -83,15 +90,7 @@ class DataSequence(Sequence):
         batch_y = self.get_batch_labels(idx)
         return batch_x, batch_y
 
-'''
-MODEL=None
-BATCH_SIZE=64
-EPOCHS=100
-train_csv_file='train_report.csv'
-valid_csv_file='valid_report.csv'
-train_folder='train_img'
-valid_folder='valid_img'
-'''
+# Function to build and return SPP-PHOCNet model 
 
 def build_phocnet():
     model = Sequential()
@@ -130,6 +129,7 @@ def getlabel(x):
     return all_labels[x]
     
 
+# Build train set dataframe after removing validation set and seen class test set images from train 
 
 df_train=pd.read_csv(train_csv_file)
 df_valid=pd.read_csv(valid_csv_file)
@@ -145,19 +145,27 @@ if train_folder==valid_folder:
 
 print("Train_Images=",len(df_train),"Valid_Images=",len(df_valid))
 
+# Generating dictionaries of words mapped to PHOC vectors
 train_word_label=gen_phoc_label(list(set(df_train['Word'])))
 valid_word_label=gen_phoc_label(list(set(df_valid['Word'])))
 all_labels={**train_word_label,**valid_word_label}
+
+# Adding folder names to file names
 df_train['Image']=train_folder+"/"+df_train['Image']
 df_valid['Image']=valid_folder+"/"+df_valid['Image']
 df_train['Label']=df_train['Word'].apply(getlabel)
 df_valid['Label']=df_valid['Word'].apply(getlabel)
+
+# Build model
 model=build_phocnet()
 
+# Sequence for passing data(images, PHOC labels) to model 
 train_sequence = DataSequence(df_train, BATCH_SIZE)
 valid_sequence = DataSequence(df_valid, BATCH_SIZE)     
 STEPS=len(df_train)//BATCH_SIZE
 EPOCHS=70000//STEPS+10000//STEPS+1
+
+# Function for LR-scheduler 
 
 def learning_rate_scheduler(epoch, lr):
     #decay_rate = 1.1
@@ -168,20 +176,32 @@ def learning_rate_scheduler(epoch, lr):
 
 print("Model Built")
 
-early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=1e-7, patience=5, verbose=2,mode='auto', baseline=None, restore_best_weights=False)
+# early_stop = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=1e-7, patience=5, verbose=2,mode='auto', baseline=None, restore_best_weights=False)
+# rlp=tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.25, patience=3, verbose=1,mode='auto', min_delta=1e-7, cooldown=3, min_lr=1e-7)
+
+# LR scheduler callback
 lrs=tf.keras.callbacks.LearningRateScheduler(learning_rate_scheduler, verbose=0)
-rlp=tf.keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.25, patience=3, verbose=1,mode='auto', min_delta=1e-7, cooldown=3, min_lr=1e-7)
-callbacks_list = [early_stop,rlp]
+
+callbacks_list = [lrs]
+
+# Training the model 
 history=model.fit(train_sequence, epochs=EPOCHS, validation_data=valid_sequence,shuffle=True,callbacks=callbacks_list)
+
+# Save the model after training completes
 model.save(model_name+".h5")
+
+# Create directory to store training history
 
 if not os.path.exists("Train_History"):
     os.makedirs("Train_History") 
 
+# Store train history as CSV file
 hist_df = pd.DataFrame(history.history) 
 hist_csv_file = 'Train_History/history_'+model_name+'.csv'
 with open(hist_csv_file, mode='w') as f:
     hist_df.to_csv(f)
+
+# Plot train and validation accuracy(avg cosine similarity)
 
 acc = history.history['cosine_similarity']
 val_acc = history.history['val_cosine_similarity']
@@ -194,6 +214,8 @@ plt.title(model_name+'_Cosine Similarity')
 plt.legend()
 plt.savefig('Train_History/'+model_name+'_Pretrain_CS.png')
 plt.show()
+
+# Plot train and validation loss
 plt.plot(epochs, loss,label='Training Loss')
 plt.plot(epochs, val_loss,label='Validation Loss')
 plt.title(model_name+' MSE Loss')
