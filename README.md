@@ -2,7 +2,7 @@
 
 ![SPP-Pho(SC)Net Image](Images/Pho(SC)net_Architecture.png)
 
-**PHOSNet** and **Pho(SC)Net** are convolution neural networks for characterizing document word images using proposed *PHOS* and *Pho(SC)* embedding, which can be used for word recognition in Zero-shot setting. This code was used for generating results for the work [Pho(SC)Net: An Approach Towards Zero-shot Word Image Recognition in Historical Documents](https://arxiv.org/abs/2105.15093).
+**PHOSNet** and **Pho(SC)Net** are convolution neural networks for characterizing document word images using proposed *PHOS* and *Pho(SC)* embedding, which can be used for word recognition in Zero-shot setting. This code was used for generating results for the work [Pho(SC)Net: An Approach Towards Zero-shot Word Image Recognition in Historical Documents](https://link.springer.com/chapter/10.1007/978-3-030-86549-8_2).
 
 Implemented using Tensorflow 2.x framework.
 
@@ -38,3 +38,18 @@ Implemented using Tensorflow 2.x framework.
 ## Results
 Following image shows prediction results on images from IAM-handwriting dataset.
 ![SPP-Pho(SC)Net Image](Images/PredictionExamples.png)
+
+## Citation
+If you find the paper or the source code useful to your projects, please cite the following bibtex: 
+<pre>
+@InProceedings{10.1007/978-3-030-86549-8_2,
+author="Rai, Anuj and Krishnan, Narayanan C. and Chanda, Sukalpa",
+title="Pho(SC)Net: An Approach Towards Zero-Shot Word Image Recognition in Historical Documents",
+booktitle="Document Analysis and Recognition -- ICDAR 2021",
+year="2021",
+publisher="Springer International Publishing",
+address="Cham",
+pages="19--33",
+isbn="978-3-030-86549-8"
+}
+</pre>
