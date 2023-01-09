@@ -38,7 +38,7 @@ Implemented using Tensorflow 2.x framework.
 ## Dataset
 We are providing the dataset used ( along with the augmented images) 
 * [Standard Split](https://mega.nz/file/i6JFGSwS#vrBJpgZu4yHZELs5fTjH5BvLXX81UUnckvtjPqWl9aw)
-* [ZSL Split]()
+* [ZSL Split](https://mega.nz/file/6mBCjSAL#Hz2xJtoWUJXuC9bf4E-4jP4HrhgAks6jT_2RHnOnmgM)
 
 ## Code Execution
 Consider organizing your dataset in the following directory structure:
