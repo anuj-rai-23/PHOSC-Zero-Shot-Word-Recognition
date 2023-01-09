@@ -35,6 +35,37 @@ Implemented using Tensorflow 2.x framework.
 
 >Test result files are named as follows: *(model_name)_(test_identifier)\_(test_setting).csv*
 
+## Dataset
+We are providing the dataset used ( along with the augmented images) 
+* [Standard Split](https://mega.nz/file/i6JFGSwS#vrBJpgZu4yHZELs5fTjH5BvLXX81UUnckvtjPqWl9aw)
+* [ZSL Split]()
+
+## Code Execution
+Consider organizing your dataset in the following directory structure:
+
+📦 Dataset</br>
+ ┣ 📦  Train </br>
+ ┣ 📦  Validation</br>
+ ┣ 📦  Test</br> 
+ ┣ 📜  Alphabet.csv </br> 
+ ┣ 📜  Test_seen.csv </br>
+ ┣ 📜  Test_unseen.csv </br>
+ ┣ 📜  Train.csv </br>
+ ┣ 📜  Train_unseen.csv </br>
+ ┣ 📜  Valid_seen.csv </br>
+ ┗ 📜  Valid_unseen.csv </br>
+
+##### Execute the following :
+* For data augmentation </br>
+`python aug_images.py -op Dataset/Validation -map Train_unseen.csv -np 40 -aug 1` </br>
+ Please perform this after going through code once. It will add n copies of already existing images to the same folder.</br>
+ File Name assignment is done using the number, e.g., if there are 20 images already in the folder, new augmented images will be as 21.png, 22.png .........
+
+* For training a model </br>
+`python train_phoscnet.py -idn MySimpleDataset -batch 128 -lr 0.0005 -epoch 200 -mp Dataset/Train.csv -vmap Dataset/Valid_seen.csv   -tr Dataset/Train -vi Dataset/Validation` </br>
+
+* For testing the saved model </br>
+`python test_phoscnet.py -model GW_split1_64.h5 -idn GenConv -mp Test_seen.csv -stf Dataset/Train -smap Dataset/Train_unseen.csv   -train Dataset/Train`
 ## Results
 Following image shows prediction results on images from IAM-handwriting dataset.
 ![SPP-Pho(SC)Net Image](Images/PredictionExamples.png)
